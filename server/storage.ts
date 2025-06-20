@@ -1,4 +1,4 @@
-import { rooms, participants, type Room, type InsertRoom, type Participant, type InsertParticipant } from "@shared/schema";
+import {   type Room, type InsertRoom, type Participant, type InsertParticipant } from "@shared/schema";
 
 export interface IStorage {
   // Room operations
@@ -37,6 +37,9 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       isActive: insertRoom.isActive ?? true,
     };
+
+    console.log("😜😜😜 MemStorage::createRoom -> room", room);
+
     this.rooms.set(id, room);
     return room;
   }

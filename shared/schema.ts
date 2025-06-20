@@ -4,9 +4,7 @@ import { z } from "zod";
 
 export const rooms = pgTable("rooms", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
   code: text("code").notNull().unique(),
-  hostId: text("host_id").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

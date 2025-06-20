@@ -3,29 +3,26 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Video, Users, Plus, MessagesSquare, MonitorUp } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { v4 as uuidv4 } from 'uuid';
+
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [roomName, setRoomName] = useState("");
   const [joinCode, setJoinCode] = useState("");
-  const [userName, setUserName] = useState("");
-  const [mode, setMode] = useState<"idle" | "create">("idle");
 
   const { toast } = useToast();
 
   const createRoomMutation = useMutation({
-    mutationFn: async (data: { name: string; code: string; hostId: string }) => {
+    mutationFn: async (data: { code: string}) => {
       const res = await apiRequest("POST", "/api/rooms", data);
       return res.json();
     },
     onSuccess: (room) => {
-      const searchParams = new URLSearchParams({ name: userName, isHost: "true" });
-      setLocation(`/room/${room.code}?${searchParams.toString()}`);
+      setLocation(`/room/${room.code}?token=admin`);
     },
     onError: () => {
       toast({
@@ -38,20 +35,9 @@ export default function Home() {
 
   const handleCreateRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!roomName.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields.",
-        variant: "destructive",
-      });
-      return;
-    }
 
-    const code = roomName.toLowerCase().replace(/\s+/g, "-") + "-" + Math.random().toString(36).substr(2, 6);
     createRoomMutation.mutate({
-      name: roomName,
-      code,
-      hostId: Math.random().toString(36).substr(2, 9),
+      code: uuidv4(),
     });
   };
 
@@ -66,9 +52,8 @@ export default function Home() {
       return;
     }
 
-    const searchParams = new URLSearchParams({ name: userName });
 
-    setLocation(`/room/${joinCode}?${searchParams.toString()}`);
+    setLocation(`/room/${joinCode}`);
   };
 
   return (
@@ -91,7 +76,7 @@ export default function Home() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Users className="w-8 h-8 text-primary" />
               </div>
-              <CardTitle className="text-xl font-semibold">Interview Meeting</CardTitle>
+              <CardTitle className="text-xl font-semibold">Start Meeting</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <form onSubmit={handleJoinRoom} className="flex gap-2">
@@ -122,7 +107,7 @@ export default function Home() {
               </div>
               <Button
                   className="w-full flex items-center justify-center gap-2"
-                  onClick={() => setMode("create")}
+                  onClick={handleCreateRoom}
               >
                 <Video className="w-5 h-5" />
                 New Meeting

@@ -159,7 +159,7 @@ export default function Meeting() {
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Video className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-900">MeetSync</span>
+            <span className="text-xl font-bold text-gray-900">Interflect</span>
           </div>
           
           <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
