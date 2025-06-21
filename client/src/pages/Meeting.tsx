@@ -14,7 +14,7 @@ import { Video, Copy, Settings, Users, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Participant } from "@shared/schema";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addChatMessage, selectChatMessages, toggleChat, selectIsChatOpen, selectIsAdmin, setAdminStatus } from "@/store/slices/meetingSlice";
+import { addChatMessage, selectChatMessages, toggleChat, selectIsAdmin, setAdminStatus } from "@/store/slices/meetingSlice";
 
 export default function Meeting() {
   const params = useParams();
@@ -30,14 +30,13 @@ export default function Meeting() {
   const [nameDialogOpen, setNameDialogOpen] = useState(true);
   const [userName, setUserName] = useState(defaultName);
   const [activeTab, setActiveTab] = useState<"participants" | "chat">("participants");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const isSidebarOpen = true; // Sidebar is always open
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [currentPeerId, setCurrentPeerId] = useState<string>("");
 
   // Redux
   const dispatch = useAppDispatch();
   const chatMessages = useAppSelector(selectChatMessages);
-  const isChatOpen = useAppSelector(selectIsChatOpen);
   const isAdmin = useAppSelector(selectIsAdmin);
 
   // Fetch room data
@@ -72,13 +71,11 @@ export default function Meeting() {
     leaveRoom
   } = useWebRTC(socket);
 
-  console.log("😀😀😀 default::Meeting -> peers", peers);
 
   // Join room after name is entered
   useEffect(() => {
     if (room && socket && isConnected && !nameDialogOpen) {
       const peerId = Math.random().toString(36).substr(2, 9);
-      console.log("Setting currentPeerId:", peerId);
       setCurrentPeerId(peerId);
       joinRoom(roomCode, peerId, userName, isHost);
     }
@@ -88,7 +85,6 @@ export default function Meeting() {
   useEffect(() => {
     if (!socket) return;
 
-    console.log("WebSocket message handler effect running with currentPeerId:", currentPeerId);
 
     const handleMessage = (event: MessageEvent) => {
       const message = JSON.parse(event.data);
@@ -113,7 +109,6 @@ export default function Meeting() {
           setParticipants(message.participants);
           break;
         case "chat-message":
-          console.log("Received chat message:", message, "currentPeerId:", currentPeerId);
           // Skip adding messages from the current user to prevent duplicates
           // since we already add them in the sendChatMessage function
           if (message.fromPeerId !== currentPeerId) {
@@ -125,8 +120,6 @@ export default function Meeting() {
               content: message.message,
               isPrivate: false
             }));
-          } else {
-            console.log("Skipping message from self");
           }
           break;
         case "error":
@@ -173,7 +166,6 @@ export default function Meeting() {
   };
 
   const sendChatMessage = (message: string) => {
-    console.log("Sending chat message:", message, "with peerId:", currentPeerId);
     sendMessage({
       type: "chat-message",
       message,
