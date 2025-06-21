@@ -14,7 +14,7 @@ import { Video, Copy, Settings, Users, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Participant } from "@shared/schema";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addChatMessage, selectChatMessages, toggleChat, selectIsAdmin, setAdminStatus } from "@/store/slices/meetingSlice";
+import { addChatMessage, selectChatMessagesByRoom, toggleChat, selectIsAdmin, setAdminStatus, joinMeeting } from "@/store/slices/meetingSlice";
 
 export default function Meeting() {
   const params = useParams();
@@ -24,20 +24,25 @@ export default function Meeting() {
 
   const roomCode = params.code!;
   const searchParams = new URLSearchParams(search);
-  const defaultName = searchParams.get("name") || "Anonymous";
   const isHost = searchParams.get("isHost") === "true";
 
-  const [nameDialogOpen, setNameDialogOpen] = useState(true);
+  // Check localStorage for saved name and userId
+  const savedName = typeof window !== 'undefined' ? localStorage.getItem('userName') : null;
+  const savedUserId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+  const defaultName = searchParams.get("name") || savedName || "Anonymous";
+
+  // Only show name dialog if no name is saved in localStorage
+  const [nameDialogOpen, setNameDialogOpen] = useState(!savedName);
   const [userName, setUserName] = useState(defaultName);
   const [activeTab, setActiveTab] = useState<"participants" | "chat">("participants");
   const isSidebarOpen = true; // Sidebar is always open
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [currentPeerId, setCurrentPeerId] = useState<string>("");
+  const [currentPeerId, setCurrentPeerId] = useState<string>(savedUserId || "");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Redux
   const dispatch = useAppDispatch();
-  const chatMessages = useAppSelector(selectChatMessages);
+  const chatMessages = useAppSelector(selectChatMessagesByRoom);
   const isAdmin = useAppSelector(selectIsAdmin);
 
   // Fetch room data
@@ -79,8 +84,14 @@ export default function Meeting() {
       const peerId = Math.random().toString(36).substr(2, 9);
       setCurrentPeerId(peerId);
       joinRoom(roomCode, peerId, userName, isHost);
+
+      // Also update Redux store with room information
+      dispatch(joinMeeting({ 
+        roomId: roomCode,
+        isAdmin: room.isAdmin
+      }));
     }
-  }, [room, socket, isConnected, roomCode, userName, isHost, joinRoom, nameDialogOpen]);
+  }, [room, socket, isConnected, roomCode, userName, isHost, joinRoom, nameDialogOpen, dispatch]);
 
   // Handle WebSocket messages
   useEffect(() => {
@@ -116,10 +127,14 @@ export default function Meeting() {
             // Use the senderName from the server
             const senderName = message.senderName || "Participant";
 
+            // Get roomId from the message or use current roomCode as fallback
+            const messageRoomId = message.roomId || roomCode;
+
             dispatch(addChatMessage({
               senderName: senderName,
               content: message.message,
-              isPrivate: false
+              isPrivate: false,
+              roomId: messageRoomId
             }));
           }
           break;
@@ -171,19 +186,46 @@ export default function Meeting() {
       type: "chat-message",
       message,
       fromPeerId: currentPeerId,
+      roomId: roomCode, // Include roomId in the message
     });
 
     // Also add to Redux store for immediate local update
     dispatch(addChatMessage({
       senderName: "You",
       content: message,
-      isPrivate: false
+      isPrivate: false,
+      roomId: roomCode, // Include roomId in the Redux store update
     }));
+  };
+
+  // Generate a unique ID based on the user's name and a timestamp
+  const generateUserId = (name: string): string => {
+    // Create a hash from the name and current timestamp
+    const timestamp = Date.now();
+    const hash = `${name}-${timestamp}`.split('').reduce((acc, char) => {
+      return (acc << 5) - acc + char.charCodeAt(0) | 0;
+    }, 0);
+
+    // Convert to a positive string in base 36 (alphanumeric)
+    return Math.abs(hash).toString(36);
   };
 
   const handleNameSubmit = (name: string) => {
     setUserName(name);
     setNameDialogOpen(false);
+
+    // Generate a unique ID if one doesn't exist
+    let userId = savedUserId;
+    if (!userId) {
+      userId = generateUserId(name);
+      setCurrentPeerId(userId);
+    }
+
+    // Store name and userId in localStorage for future sessions
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('userName', name);
+      localStorage.setItem('userId', userId);
+    }
   };
 
   if (!room) {

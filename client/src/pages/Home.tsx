@@ -1,31 +1,30 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Video, Users,  MessagesSquare, MonitorUp } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Video, Users, MessagesSquare, MonitorUp } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
-import ReduxExample from "@/components/ReduxExample";
-import { useAppDispatch } from "@/store/hooks";
-import { setAdminStatus, joinMeeting } from "@/store/slices/meetingSlice";
-
+import ReduxExample from '@/components/ReduxExample';
+import { useAppDispatch } from '@/store/hooks';
+import { setAdminStatus, joinMeeting } from '@/store/slices/meetingSlice';
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const [joinCode, setJoinCode] = useState("");
+  const [joinCode, setJoinCode] = useState('');
   const dispatch = useAppDispatch();
 
   const { toast } = useToast();
 
   const createRoomMutation = useMutation({
-    mutationFn: async (data: { code: string}) => {
-      const res = await apiRequest("POST", "/api/rooms", data);
+    mutationFn: async (data: { code: string }) => {
+      const res = await apiRequest('POST', '/api/rooms', data);
       return res.json();
     },
-    onSuccess: (room) => {
+    onSuccess: room => {
       // Store admin status in Redux
       dispatch(setAdminStatus(room.isAdmin));
 
@@ -34,9 +33,9 @@ export default function Home() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create room. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create room. Please try again.',
+        variant: 'destructive',
       });
     },
   });
@@ -53,13 +52,12 @@ export default function Home() {
     e.preventDefault();
     if (!joinCode.trim()) {
       toast({
-        title: "Error",
-        description: "Please fill in all fields.",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Please fill in all fields.',
+        variant: 'destructive',
       });
       return;
     }
-
 
     setLocation(`/room/${joinCode}`);
   };
@@ -89,20 +87,20 @@ export default function Home() {
             <CardContent className="space-y-4">
               <form onSubmit={handleJoinRoom} className="flex gap-2">
                 <Input
-                    className="flex-1 focus-visible:outline-none focus-visible:ring-0"
-                    placeholder="Enter a code or link"
-                    value={joinCode}
-                    onChange={(e) => setJoinCode(e.target.value)}
-                    required
+                  className="flex-1 focus-visible:outline-none focus-visible:ring-0"
+                  placeholder="Enter a code or link"
+                  value={joinCode}
+                  onChange={e => setJoinCode(e.target.value)}
+                  required
                 />
                 <Button
-                    type="submit"
-                    className={
-                      joinCode
-                          ? "px-6 py-3 text-base font-semibold rounded-md bg-primary text-white hover:bg-primary/90 transition"
-                          : "px-6 py-3 bg-secondary text-black hover:bg-muted/50 transition"
-                    }
-                    disabled={!joinCode}
+                  type="submit"
+                  className={
+                    joinCode
+                      ? 'px-6 py-3 text-base font-semibold rounded-md bg-primary text-white hover:bg-primary/90 transition'
+                      : 'px-6 py-3 bg-secondary text-black hover:bg-muted/50 transition'
+                  }
+                  disabled={!joinCode}
                 >
                   Join
                 </Button>
@@ -114,8 +112,8 @@ export default function Home() {
                 <div className="flex-grow border-t border-muted" />
               </div>
               <Button
-                  className="w-full flex items-center justify-center gap-2"
-                  onClick={handleCreateRoom}
+                className="w-full flex items-center justify-center gap-2"
+                onClick={handleCreateRoom}
               >
                 <Video className="w-5 h-5" />
                 New Meeting
@@ -123,7 +121,6 @@ export default function Home() {
             </CardContent>
           </Card>
         </div>
-
 
         {/* Features */}
         <div className="mt-12 text-center">
@@ -157,12 +154,6 @@ export default function Home() {
               <span className="text-sm font-medium text-gray-700">Real-time Chat</span>
             </div>
           </div>
-        </div>
-
-        {/* Redux Example */}
-        <div className="mt-12 max-w-2xl mx-auto">
-          <h2 className="text-xl font-bold text-center mb-4">Redux State Management Demo</h2>
-          <ReduxExample />
         </div>
       </div>
     </div>

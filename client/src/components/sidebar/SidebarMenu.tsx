@@ -1,6 +1,6 @@
-import React from "react";
-import MenuItem from "./MenuItem";
-import { ClipboardCheck, BookOpen, CheckSquare, HelpCircle } from "lucide-react";
+import React from 'react';
+import MenuItem from './MenuItem';
+import { ClipboardCheck, BookOpen, CheckSquare, HelpCircle } from 'lucide-react';
 
 interface SidebarMenuProps {
   activeTab: string | null;
@@ -8,37 +8,33 @@ interface SidebarMenuProps {
   handleTabClick: (tab: string) => void;
 }
 
-const SidebarMenu: React.FC<SidebarMenuProps> = ({
-  activeTab,
-  open,
-  handleTabClick,
-}) => {
+const SidebarMenu: React.FC<SidebarMenuProps> = ({ activeTab, open, handleTabClick }) => {
   const menuItems = [
     {
-      id: "agenda",
+      id: 'agenda',
       icon: ClipboardCheck,
-      label: "Interview Agenda",
+      label: 'Interview Agenda',
     },
     {
-      id: "topics",
+      id: 'topics',
       icon: BookOpen,
-      label: "Interview Topics",
+      label: 'Interview Topics',
     },
     {
-      id: "tasks",
+      id: 'tasks',
       icon: CheckSquare,
-      label: "Interview Tasks",
+      label: 'Self-Guided Interview Notes',
     },
     {
-      id: "questions",
+      id: 'questions',
       icon: HelpCircle,
-      label: "Interview Questions",
+      label: 'Interview Questions',
     },
   ];
 
   return (
-    <div className={`flex flex-col gap-2 ${!open ? "items-center" : ""}`}>
-      {menuItems.map((item) => (
+    <div className={`flex flex-col gap-2 ${!open ? 'items-center' : ''}`}>
+      {menuItems.map(item => (
         <MenuItem
           key={item.id}
           icon={item.icon}

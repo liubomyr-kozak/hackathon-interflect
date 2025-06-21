@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addChatMessage, selectChatMessages } from "@/store/slices/meetingSlice";
+import { addChatMessage, selectChatMessagesByRoom } from "@/store/slices/meetingSlice";
 
 interface ReduxChatSidebarProps {
   onSendMessage: (message: string) => void;
@@ -13,8 +13,8 @@ interface ReduxChatSidebarProps {
 
 export default function ReduxChatSidebar({ onSendMessage, currentUser }: ReduxChatSidebarProps) {
   const [messageText, setMessageText] = useState("");
-  const chatMessages = useAppSelector(selectChatMessages);
-  
+  const chatMessages = useAppSelector(selectChatMessagesByRoom);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (messageText.trim()) {
@@ -64,7 +64,7 @@ export default function ReduxChatSidebar({ onSendMessage, currentUser }: ReduxCh
           )}
         </div>
       </ScrollArea>
-      
+
       {/* Chat Input */}
       <div className="p-4 border-t border-gray-200">
         <form onSubmit={handleSubmit} className="flex space-x-2">

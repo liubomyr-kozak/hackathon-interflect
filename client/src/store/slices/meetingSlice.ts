@@ -18,6 +18,7 @@ interface ChatMessage {
   timestamp: number;
   isPrivate: boolean;
   recipientId?: string;
+  roomId?: string;
 }
 
 // Define the state type
@@ -75,10 +76,14 @@ export const meetingSlice = createSlice({
       state.participants = state.participants.filter(p => p.id !== action.payload.id);
     },
     addChatMessage: (state, action: PayloadAction<Omit<ChatMessage, 'id' | 'timestamp'>>) => {
+      // Use the provided roomId or fall back to the current roomId in state
+      const roomId = action?.payload?.roomId ?? state?.roomId;
+
       state.chatMessages.push({
         ...action.payload,
         id: Date.now().toString(), // Simple ID generation
         timestamp: Date.now(),
+        roomId: roomId || '',
       });
     },
     toggleChat: (state) => {
@@ -109,6 +114,13 @@ export const selectIsActive = (state: RootState) => state.meeting.isActive;
 export const selectIsAdmin = (state: RootState) => state.meeting.isAdmin;
 export const selectParticipants = (state: RootState) => state.meeting.participants;
 export const selectChatMessages = (state: RootState) => state.meeting.chatMessages;
+export const selectChatMessagesByRoom = (state: RootState) => {
+  const roomId = state.meeting.roomId;
+  return state.meeting.chatMessages.filter(msg => 
+    // Include messages with matching roomId or messages without roomId (for backward compatibility)
+    !msg.roomId || msg.roomId === roomId
+  );
+};
 export const selectIsChatOpen = (state: RootState) => state.meeting.isChatOpen;
 
 // Export reducer
