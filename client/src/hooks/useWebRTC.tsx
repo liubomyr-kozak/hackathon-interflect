@@ -8,19 +8,25 @@ export function useWebRTC(socket: WebSocket | null) {
   const [isMuted, setIsMuted] = useState(false);
   const [hasVideo, setHasVideo] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  
+
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const currentPeerIdRef = useRef<string>("");
+  const peersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
 
   // Initialize local media
   useEffect(() => {
     initializeLocalMedia();
-    
+
     return () => {
       cleanupStreams();
     };
   }, []);
+
+  // Sync peersRef with peers state
+  useEffect(() => {
+    peersRef.current = new Map(peers);
+  }, [peers]);
 
   // Handle WebSocket messages
   useEffect(() => {
@@ -28,7 +34,7 @@ export function useWebRTC(socket: WebSocket | null) {
 
     const handleMessage = (event: MessageEvent) => {
       const message = JSON.parse(event.data);
-      
+
       switch (message.type) {
         case "offer":
           handleIncomingOffer(message);
@@ -68,14 +74,15 @@ export function useWebRTC(socket: WebSocket | null) {
   const cleanupStreams = () => {
     localStreamRef.current?.getTracks().forEach(track => track.stop());
     screenStreamRef.current?.getTracks().forEach(track => track.stop());
-    
-    peers.forEach(peer => peer.close());
+
+    peersRef.current.forEach(peer => peer.close());
+    peersRef.current.clear();
     setPeers(new Map());
   };
 
   const joinRoom = useCallback((roomCode: string, peerId: string, name: string, isHost: boolean) => {
     currentPeerIdRef.current = peerId;
-    
+
     if (socket) {
       socket.send(JSON.stringify({
         type: "join-room",
@@ -93,13 +100,13 @@ export function useWebRTC(socket: WebSocket | null) {
         type: "leave-room",
       }));
     }
-    
+
     cleanupStreams();
   }, [socket]);
 
   const handleParticipantJoined = async (message: any) => {
     const { participant } = message;
-    
+
     if (participant.peerId === currentPeerIdRef.current) return;
 
     const peer = await createPeerConnection(
@@ -115,15 +122,14 @@ export function useWebRTC(socket: WebSocket | null) {
       }
     );
 
-
-    debugger;
-
-    setPeers(prev => new Map(prev).set(participant.peerId, peer));
+    // Update both the ref and the state
+    peersRef.current.set(participant.peerId, peer);
+    setPeers(new Map(peersRef.current));
 
     // Create offer for new participant
     const offer = await peer.createOffer();
     await peer.setLocalDescription(offer);
-    
+
     if (socket) {
       socket.send(JSON.stringify({
         type: "offer",
@@ -136,21 +142,17 @@ export function useWebRTC(socket: WebSocket | null) {
   const handleParticipantLeft = (message: any) => {
     const { peerId } = message;
 
-    debugger;
-    setPeers(prev => {
-      const newPeers = new Map(prev);
-      const peer = newPeers.get(peerId);
-      if (peer) {
-        peer.close();
-        newPeers.delete(peerId);
-      }
-      return newPeers;
-    });
+    const peer = peersRef.current.get(peerId);
+    if (peer) {
+      peer.close();
+      peersRef.current.delete(peerId);
+      setPeers(new Map(peersRef.current));
+    }
   };
 
   const handleIncomingOffer = async (message: any) => {
     const { fromPeerId, offer } = message;
-    
+
     const peer = await createPeerConnection(
       localStreamRef.current,
       (candidate) => {
@@ -164,11 +166,12 @@ export function useWebRTC(socket: WebSocket | null) {
       }
     );
 
-    debugger;
-    setPeers(prev => new Map(prev).set(fromPeerId, peer));
+    // Update both the ref and the state
+    peersRef.current.set(fromPeerId, peer);
+    setPeers(new Map(peersRef.current));
 
     const answer = await handleOffer(peer, offer);
-    
+
     if (socket) {
       socket.send(JSON.stringify({
         type: "answer",
@@ -180,8 +183,8 @@ export function useWebRTC(socket: WebSocket | null) {
 
   const handleIncomingAnswer = async (message: any) => {
     const { fromPeerId, answer } = message;
-    const peer = peers.get(fromPeerId);
-    
+    const peer = peersRef.current.get(fromPeerId);
+
     if (peer) {
       await handleAnswer(peer, answer);
     }
@@ -189,8 +192,8 @@ export function useWebRTC(socket: WebSocket | null) {
 
   const handleIncomingIceCandidate = async (message: any) => {
     const { fromPeerId, candidate } = message;
-    const peer = peers.get(fromPeerId);
-    
+    const peer = peersRef.current.get(fromPeerId);
+
     if (peer) {
       await handleIceCandidate(peer, candidate);
     }
@@ -202,7 +205,7 @@ export function useWebRTC(socket: WebSocket | null) {
       if (audioTrack) {
         audioTrack.enabled = !audioTrack.enabled;
         setIsMuted(!audioTrack.enabled);
-        
+
         // Notify other participants
         if (socket) {
           socket.send(JSON.stringify({
@@ -220,7 +223,7 @@ export function useWebRTC(socket: WebSocket | null) {
       if (videoTrack) {
         videoTrack.enabled = !videoTrack.enabled;
         setHasVideo(videoTrack.enabled);
-        
+
         // Notify other participants
         if (socket) {
           socket.send(JSON.stringify({
@@ -240,13 +243,13 @@ export function useWebRTC(socket: WebSocket | null) {
         setScreenStream(null);
         screenStreamRef.current = null;
         setIsScreenSharing(false);
-        
+
         // Switch back to camera
         if (localStreamRef.current) {
           const videoTrack = localStreamRef.current.getVideoTracks()[0];
           if (videoTrack) {
             // Replace screen share track with camera track in all peer connections
-            peers.forEach(async (peer) => {
+            peersRef.current.forEach(async (peer) => {
               const sender = peer.getSenders().find(s => 
                 s.track && s.track.kind === 'video'
               );
@@ -262,15 +265,15 @@ export function useWebRTC(socket: WebSocket | null) {
           video: true,
           audio: true,
         });
-        
+
         setScreenStream(screenStream);
         screenStreamRef.current = screenStream;
         setIsScreenSharing(true);
-        
+
         const videoTrack = screenStream.getVideoTracks()[0];
-        
+
         // Replace camera track with screen share track in all peer connections
-        peers.forEach(async (peer) => {
+        peersRef.current.forEach(async (peer) => {
           const sender = peer.getSenders().find(s => 
             s.track && s.track.kind === 'video'
           );
@@ -278,13 +281,13 @@ export function useWebRTC(socket: WebSocket | null) {
             await sender.replaceTrack(videoTrack);
           }
         });
-        
+
         // Handle screen share end
         videoTrack.onended = () => {
           toggleScreenShare();
         };
       }
-      
+
       // Notify other participants
       if (socket) {
         socket.send(JSON.stringify({
