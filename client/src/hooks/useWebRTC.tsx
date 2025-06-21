@@ -115,6 +115,9 @@ export function useWebRTC(socket: WebSocket | null) {
       }
     );
 
+
+    debugger;
+
     setPeers(prev => new Map(prev).set(participant.peerId, peer));
 
     // Create offer for new participant
@@ -132,7 +135,8 @@ export function useWebRTC(socket: WebSocket | null) {
 
   const handleParticipantLeft = (message: any) => {
     const { peerId } = message;
-    
+
+    debugger;
     setPeers(prev => {
       const newPeers = new Map(prev);
       const peer = newPeers.get(peerId);
@@ -160,6 +164,7 @@ export function useWebRTC(socket: WebSocket | null) {
       }
     );
 
+    debugger;
     setPeers(prev => new Map(prev).set(fromPeerId, peer));
 
     const answer = await handleOffer(peer, offer);

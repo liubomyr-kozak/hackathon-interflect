@@ -3,11 +3,12 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Video, Users, Plus, MessagesSquare, MonitorUp } from "lucide-react";
+import { Video, Users,  MessagesSquare, MonitorUp } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from 'uuid';
+import ReduxExample from "@/components/ReduxExample";
 
 
 export default function Home() {
@@ -22,7 +23,7 @@ export default function Home() {
       return res.json();
     },
     onSuccess: (room) => {
-      setLocation(`/room/${room.code}?token=admin`);
+      setLocation(`/room/${room.code}`);
     },
     onError: () => {
       toast({
@@ -149,6 +150,12 @@ export default function Home() {
               <span className="text-sm font-medium text-gray-700">Real-time Chat</span>
             </div>
           </div>
+        </div>
+
+        {/* Redux Example */}
+        <div className="mt-12 max-w-2xl mx-auto">
+          <h2 className="text-xl font-bold text-center mb-4">Redux State Management Demo</h2>
+          <ReduxExample />
         </div>
       </div>
     </div>

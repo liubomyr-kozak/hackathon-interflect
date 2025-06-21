@@ -4,6 +4,7 @@ import { z } from "zod";
 
 export const rooms = pgTable("rooms", {
   id: serial("id").primaryKey(),
+  isAdmin: boolean("is_admin").notNull().default(false),
   code: text("code").notNull().unique(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -14,6 +15,7 @@ export const participants = pgTable("participants", {
   roomId: text("room_id").notNull(),
   peerId: text("peer_id").notNull(),
   name: text("name").notNull(),
+  isAdmin: boolean("is_admin").notNull().default(false),
   isHost: boolean("is_host").notNull().default(false),
   isMuted: boolean("is_muted").notNull().default(false),
   hasVideo: boolean("has_video").notNull().default(true),

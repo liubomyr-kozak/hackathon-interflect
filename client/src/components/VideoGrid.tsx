@@ -49,7 +49,7 @@ export default function VideoGrid({
     <div className="h-full p-4">
       <div className="h-full grid grid-cols-1 lg:grid-cols-4 gap-4">
         {/* Main Video Area */}
-        <div className="lg:col-span-3 relative bg-gray-800 rounded-xl overflow-hidden shadow-2xl">
+        <div className="lg:col-span-4 relative bg-gray-800 rounded-xl overflow-hidden shadow-2xl">
           {isScreenSharing && screenStream ? (
             <video
               ref={screenVideoRef}
@@ -111,15 +111,14 @@ export default function VideoGrid({
             />
           ))}
           
-          {/* Empty slots if less than 3 participants */}
-          {Array.from({ length: Math.max(0, 3 - peers.size) }).map((_, index) => (
-            <div key={`empty-${index}`} className="aspect-video bg-gray-700 rounded-lg flex items-center justify-center">
-              <div className="text-center text-gray-400">
-                <i className="fas fa-user text-2xl mb-2"></i>
-                <p className="text-sm">Waiting for participants...</p>
-              </div>
-            </div>
-          ))}
+          {/*{Array.from({ length: peers.size }).map((_, index) => (*/}
+          {/*  <div key={`empty-${index}`} className="aspect-video bg-gray-700 rounded-lg flex items-center justify-center">*/}
+          {/*    <div className="text-center text-gray-400">*/}
+          {/*      <i className="fas fa-user text-2xl mb-2"></i>*/}
+          {/*      <p className="text-sm">Waiting for participants...</p>*/}
+          {/*    </div>*/}
+          {/*  </div>*/}
+          {/*))}*/}
         </div>
       </div>
     </div>
