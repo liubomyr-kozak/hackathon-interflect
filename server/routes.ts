@@ -61,13 +61,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API endpoint to change a participant's admin status
+  app.post('/api/participants/:peerId/admin', async (req, res) => {
+    try {
+      const { peerId } = req.params;
+      const { isAdmin } = req.body;
+
+      if (typeof isAdmin !== 'boolean') {
+        return res.status(400).json({ message: 'isAdmin must be a boolean' });
+      }
+
+      const participant = await storage.getParticipant(peerId);
+      if (!participant) {
+        return res.status(404).json({ message: 'Participant not found' });
+      }
+
+      const updatedParticipant = await storage.updateParticipant(peerId, { isAdmin });
+
+      // Notify all clients in the room about the role change
+      if (participant.roomId) {
+        broadcastToRoom(participant.roomId, {
+          type: 'participant-updated',
+          peerId,
+          updates: { isAdmin },
+        });
+      }
+
+      res.json(updatedParticipant);
+    } catch (error) {
+      console.error('Error updating participant admin status:', error);
+      res.status(500).json({ message: 'Failed to update participant admin status' });
+    }
+  });
+
   // WebSocket connection handling
   wss.on('connection', (ws: WebSocketClient) => {
-    console.log('New WebSocket connection');
+    console.log('New WebSocket connection', new Date().toISOString());
+    console.log(`Total WebSocket connections: ${wss.clients.size}`);
 
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString());
+        console.log(`Received WebSocket message from ${ws.peerId || 'unknown'} (${ws.roomId || 'no room'}):`, message.type);
 
         switch (message.type) {
           case 'join-room':
@@ -174,14 +209,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  function handleChatMessage(ws: WebSocketClient, message: any) {
+  async function handleChatMessage(ws: WebSocketClient, message: any) {
     if (ws.roomId) {
+      // Use message.fromPeerId if provided, otherwise fall back to ws.peerId
+      const fromPeerId = message.fromPeerId || ws.peerId;
+      console.log("Handling chat message from", fromPeerId, "(ws.peerId:", ws.peerId, "):", message.message);
+
+      // Get the participant's name from storage
+      const participant = await storage.getParticipant(fromPeerId);
+      const senderName = participant ? participant.name : "Unknown User";
+
       broadcastToRoom(ws.roomId, {
         type: 'chat-message',
         message: message.message,
-        fromPeerId: ws.peerId,
+        fromPeerId: fromPeerId,
+        senderName: senderName,
         timestamp: new Date().toISOString(),
-      });
+      }, ws.peerId); // Exclude sender from receiving their own message
     }
   }
 
@@ -214,10 +258,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   function broadcastToRoom(roomId: string, message: any, excludePeerId?: string) {
+    // Log all clients in the room
+    let clientsInRoom = 0;
+    // @ts-ignore
+    for (const [peerId, client] of clients) {
+      if (client.roomId === roomId) {
+      }
+    }
+
+    let recipientCount = 0;
     // @ts-ignore
     for (const [peerId, client] of clients) {
       if (client.roomId === roomId && peerId !== excludePeerId && client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify(message));
+        recipientCount++;
       }
     }
   }

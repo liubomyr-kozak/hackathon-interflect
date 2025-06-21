@@ -1,7 +1,16 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Mic, MicOff, Video, VideoOff, Monitor, Crown } from "lucide-react";
+import { MoreHorizontal, Mic, MicOff, Video, VideoOff, Monitor, Crown, ShieldCheck } from "lucide-react";
 import type { Participant } from "@shared/schema";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+import { useAppSelector } from "@/store/hooks";
+import { selectIsAdmin } from "@/store/slices/meetingSlice";
 
 interface ParticipantsSidebarProps {
   participants: Participant[];
@@ -9,6 +18,36 @@ interface ParticipantsSidebarProps {
 }
 
 export default function ParticipantsSidebar({ participants, currentUser }: ParticipantsSidebarProps) {
+  const { toast } = useToast();
+  const isCurrentUserAdmin = useAppSelector(selectIsAdmin);
+
+  const makeAdmin = async (participant: Participant) => {
+    try {
+      const response = await fetch(`/api/participants/${participant.peerId}/admin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isAdmin: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to make user admin');
+      }
+
+      toast({
+        title: "Success",
+        description: `${participant.name} is now an admin`,
+      });
+    } catch (error) {
+      console.error('Error making user admin:', error);
+      toast({
+        title: "Error",
+        description: "Failed to make user admin",
+        variant: "destructive",
+      });
+    }
+  };
   return (
     <ScrollArea className="flex-1 p-4">
       <div className="space-y-3">
@@ -60,6 +99,12 @@ export default function ParticipantsSidebar({ participants, currentUser }: Parti
                     <span>Host</span>
                   </span>
                 )}
+                {participant.isAdmin && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center space-x-1">
+                    <ShieldCheck className="w-3 h-3" />
+                    <span>Admin</span>
+                  </span>
+                )}
               </div>
               <div className="flex items-center space-x-1 mt-1">
                 {participant.isMuted ? (
@@ -77,9 +122,23 @@ export default function ParticipantsSidebar({ participants, currentUser }: Parti
                 )}
               </div>
             </div>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
+            {isCurrentUserAdmin && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {!participant.isAdmin && (
+                    <DropdownMenuItem onClick={() => makeAdmin(participant)}>
+                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      <span>Make Admin</span>
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         ))}
 

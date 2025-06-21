@@ -32,6 +32,7 @@ export default function Meeting() {
   const [activeTab, setActiveTab] = useState<"participants" | "chat">("participants");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const [currentPeerId, setCurrentPeerId] = useState<string>("");
 
   // Redux
   const dispatch = useAppDispatch();
@@ -77,6 +78,8 @@ export default function Meeting() {
   useEffect(() => {
     if (room && socket && isConnected && !nameDialogOpen) {
       const peerId = Math.random().toString(36).substr(2, 9);
+      console.log("Setting currentPeerId:", peerId);
+      setCurrentPeerId(peerId);
       joinRoom(roomCode, peerId, userName, isHost);
     }
   }, [room, socket, isConnected, roomCode, userName, isHost, joinRoom, nameDialogOpen]);
@@ -84,6 +87,8 @@ export default function Meeting() {
   // Handle WebSocket messages
   useEffect(() => {
     if (!socket) return;
+
+    console.log("WebSocket message handler effect running with currentPeerId:", currentPeerId);
 
     const handleMessage = (event: MessageEvent) => {
       const message = JSON.parse(event.data);
@@ -108,18 +113,20 @@ export default function Meeting() {
           setParticipants(message.participants);
           break;
         case "chat-message":
+          console.log("Received chat message:", message, "currentPeerId:", currentPeerId);
           // Skip adding messages from the current user to prevent duplicates
           // since we already add them in the sendChatMessage function
-          if (message.fromPeerId !== userName) {
-            // Find the participant's name if available
-            const participant = participants.find(p => p.peerId === message.fromPeerId);
-            const senderName = participant?.name || "Participant";
+          if (message.fromPeerId !== currentPeerId) {
+            // Use the senderName from the server
+            const senderName = message.senderName || "Participant";
 
             dispatch(addChatMessage({
               senderName: senderName,
               content: message.message,
               isPrivate: false
             }));
+          } else {
+            console.log("Skipping message from self");
           }
           break;
         case "error":
@@ -134,7 +141,7 @@ export default function Meeting() {
 
     socket.addEventListener("message", handleMessage);
     return () => socket.removeEventListener("message", handleMessage);
-  }, [socket, toast]);
+  }, [socket, toast, dispatch, participants, currentPeerId]);
 
   // Handle room not found
   useEffect(() => {
@@ -166,9 +173,11 @@ export default function Meeting() {
   };
 
   const sendChatMessage = (message: string) => {
+    console.log("Sending chat message:", message, "with peerId:", currentPeerId);
     sendMessage({
       type: "chat-message",
       message,
+      fromPeerId: currentPeerId,
     });
 
     // Also add to Redux store for immediate local update
