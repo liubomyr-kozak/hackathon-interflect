@@ -5,7 +5,7 @@ import VideoGrid from "@/components/VideoGrid";
 import MeetingControls from "@/components/MeetingControls";
 import ParticipantsSidebar from "@/components/ParticipantsSidebar";
 import ReduxChatSidebar from "@/components/ReduxChatSidebar";
-import AdminSidebar from "@/components/AdminSidebar";
+import MergedSidebar from "@/components/MergedSidebar";
 import { NameInputDialog } from "@/components/NameInputDialog";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -33,6 +33,7 @@ export default function Meeting() {
   const isSidebarOpen = true; // Sidebar is always open
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [currentPeerId, setCurrentPeerId] = useState<string>("");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Redux
   const dispatch = useAppDispatch();
@@ -237,17 +238,23 @@ export default function Meeting() {
             <span className="text-gray-600">{participants.length + 1} participants</span>
           </div>
 
-          <Button variant="ghost" size="sm">
-            <Settings className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button variant="ghost" size="sm">
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Only visible to admin */}
+        {/* Admin Sidebar - Only visible to admin */}
         {isAdmin && (
-          <AdminSidebar isAdmin={isAdmin} />
+          <MergedSidebar 
+            isAdmin={isAdmin}
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+          />
         )}
 
         {/* Video Area */}

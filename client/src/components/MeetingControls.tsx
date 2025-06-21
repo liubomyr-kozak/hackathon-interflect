@@ -68,16 +68,6 @@ export default function MeetingControls({
           {isScreenSharing ? <MonitorOff className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
         </Button>
 
-        {/* More Options */}
-        <Button
-          variant="secondary"
-          size="lg"
-          className="w-12 h-12 bg-gray-600 hover:bg-gray-700 rounded-xl text-white transition-all duration-200 hover:scale-105"
-          title="More options"
-        >
-          <MoreVertical className="w-5 h-5" />
-        </Button>
-
         {/* Leave Meeting */}
         <Button
           variant="destructive"
