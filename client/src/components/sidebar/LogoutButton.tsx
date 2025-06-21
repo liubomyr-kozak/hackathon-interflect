@@ -14,18 +14,18 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({ isOpen }) => {
         </div>
         <h2
           className={`whitespace-pre duration-500 ${
-            !isOpen && "opacity-0 translate-x-28 overflow-hidden"
+            !isOpen && "opacity-0 translate-x-28 overflow-hidden hidden"
           }`}
         >
           Logout
         </h2>
-        <h2
-          className={`${
-            isOpen && "hidden"
-          } absolute left-16 bg-white font-semibold whitespace-pre text-gray-900 rounded-md drop-shadow-lg px-0 py-0 w-0 overflow-hidden group-hover:px-2 group-hover:py-1 group-hover:left-14 group-hover:duration-300 group-hover:w-fit z-50`}
-        >
-          Logout
-        </h2>
+        {!isOpen && (
+          <h2
+            className="absolute left-16 bg-white font-semibold whitespace-pre text-gray-900 rounded-md drop-shadow-lg px-0 py-0 w-0 overflow-hidden group-hover:px-2 group-hover:py-1 group-hover:left-14 group-hover:duration-300 group-hover:w-fit z-50"
+          >
+            Logout
+          </h2>
+        )}
       </div>
     </div>
   );
