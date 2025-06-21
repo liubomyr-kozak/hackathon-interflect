@@ -39,7 +39,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!room) {
         return res.status(404).json({ message: 'Room not found' });
       }
-      res.json(room);
+      // Return specific fields in the required format
+      res.json({
+        code: room.code,
+        id: room.id,
+        isAdmin: room.isAdmin,
+        createdAt: room.createdAt,
+        isActive: room.isActive
+      });
     } catch (error) {
       res.status(500).json({ message: 'Failed to get room' });
     }
@@ -61,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     ws.on('message', async (data) => {
       try {
         const message = JSON.parse(data.toString());
-        
+
         switch (message.type) {
           case 'join-room':
             await handleJoinRoom(ws, message);
@@ -97,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function handleJoinRoom(ws: WebSocketClient, message: any) {
     try {
       const { roomCode, peerId, name, isHost } = message;
-      
+
       // Verify room exists
       const room = await storage.getRoom(roomCode);
       if (!room) {
@@ -142,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function handleLeaveRoom(ws: WebSocketClient, message: any) {
     if (ws.peerId && ws.roomId) {
       await storage.removeParticipant(ws.peerId);
-      
+
       broadcastToRoom(ws.roomId, {
         type: 'participant-left',
         peerId: ws.peerId,
@@ -158,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function handleWebRTCSignaling(ws: WebSocketClient, message: any) {
     const { targetPeerId, ...signalData } = message;
     const targetClient = clients.get(targetPeerId);
-    
+
     if (targetClient && targetClient.readyState === WebSocket.OPEN) {
       targetClient.send(JSON.stringify({
         ...signalData,
@@ -182,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (ws.peerId) {
       const { updates } = message;
       await storage.updateParticipant(ws.peerId, updates);
-      
+
       if (ws.roomId) {
         broadcastToRoom(ws.roomId, {
           type: 'participant-updated',
@@ -196,7 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function handleDisconnect(ws: WebSocketClient) {
     if (ws.peerId && ws.roomId) {
       storage.removeParticipant(ws.peerId);
-      
+
       broadcastToRoom(ws.roomId, {
         type: 'participant-left',
         peerId: ws.peerId,

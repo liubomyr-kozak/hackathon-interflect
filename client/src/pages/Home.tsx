@@ -9,11 +9,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from 'uuid';
 import ReduxExample from "@/components/ReduxExample";
+import { useAppDispatch } from "@/store/hooks";
+import { setAdminStatus, joinMeeting } from "@/store/slices/meetingSlice";
 
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const [joinCode, setJoinCode] = useState("");
+  const dispatch = useAppDispatch();
 
   const { toast } = useToast();
 
@@ -23,6 +26,10 @@ export default function Home() {
       return res.json();
     },
     onSuccess: (room) => {
+      // Store admin status in Redux
+      dispatch(setAdminStatus(room.isAdmin));
+
+      // Use the room code from the response to navigate to the room
       setLocation(`/room/${room.code}`);
     },
     onError: () => {

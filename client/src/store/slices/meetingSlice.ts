@@ -13,7 +13,6 @@ interface Participant {
 // Define types for chat messages
 interface ChatMessage {
   id: string;
-  senderId: string;
   senderName: string;
   content: string;
   timestamp: number;
@@ -25,6 +24,7 @@ interface ChatMessage {
 interface MeetingState {
   roomId: string | null;
   isActive: boolean;
+  isAdmin: boolean;
   participants: Participant[];
   chatMessages: ChatMessage[];
   isChatOpen: boolean;
@@ -34,6 +34,7 @@ interface MeetingState {
 const initialState: MeetingState = {
   roomId: null,
   isActive: false,
+  isAdmin: false,
   participants: [],
   chatMessages: [],
   isChatOpen: false,
@@ -44,9 +45,12 @@ export const meetingSlice = createSlice({
   name: 'meeting',
   initialState,
   reducers: {
-    joinMeeting: (state, action: PayloadAction<{ roomId: string }>) => {
+    joinMeeting: (state, action: PayloadAction<{ roomId: string; isAdmin?: boolean }>) => {
       state.roomId = action.payload.roomId;
       state.isActive = true;
+      if (action.payload.isAdmin !== undefined) {
+        state.isAdmin = action.payload.isAdmin;
+      }
     },
     leaveMeeting: (state) => {
       state.roomId = null;
@@ -80,6 +84,9 @@ export const meetingSlice = createSlice({
     toggleChat: (state) => {
       state.isChatOpen = !state.isChatOpen;
     },
+    setAdminStatus: (state, action: PayloadAction<boolean>) => {
+      state.isAdmin = action.payload;
+    },
   },
 });
 
@@ -92,12 +99,14 @@ export const {
   removeParticipant,
   addChatMessage,
   toggleChat,
+  setAdminStatus,
 } = meetingSlice.actions;
 
 // Export selectors
 export const selectMeeting = (state: RootState) => state.meeting;
 export const selectRoomId = (state: RootState) => state.meeting.roomId;
 export const selectIsActive = (state: RootState) => state.meeting.isActive;
+export const selectIsAdmin = (state: RootState) => state.meeting.isAdmin;
 export const selectParticipants = (state: RootState) => state.meeting.participants;
 export const selectChatMessages = (state: RootState) => state.meeting.chatMessages;
 export const selectIsChatOpen = (state: RootState) => state.meeting.isChatOpen;

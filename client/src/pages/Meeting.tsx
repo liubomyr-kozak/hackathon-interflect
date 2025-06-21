@@ -5,6 +5,7 @@ import VideoGrid from "@/components/VideoGrid";
 import MeetingControls from "@/components/MeetingControls";
 import ParticipantsSidebar from "@/components/ParticipantsSidebar";
 import ReduxChatSidebar from "@/components/ReduxChatSidebar";
+import AdminSidebar from "@/components/AdminSidebar";
 import { NameInputDialog } from "@/components/NameInputDialog";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -13,7 +14,7 @@ import { Video, Copy, Settings, Users, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Participant } from "@shared/schema";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { addChatMessage, selectChatMessages, toggleChat, selectIsChatOpen } from "@/store/slices/meetingSlice";
+import { addChatMessage, selectChatMessages, toggleChat, selectIsChatOpen, selectIsAdmin, setAdminStatus } from "@/store/slices/meetingSlice";
 
 export default function Meeting() {
   const params = useParams();
@@ -36,6 +37,7 @@ export default function Meeting() {
   const dispatch = useAppDispatch();
   const chatMessages = useAppSelector(selectChatMessages);
   const isChatOpen = useAppSelector(selectIsChatOpen);
+  const isAdmin = useAppSelector(selectIsAdmin);
 
   // Fetch room data
   const { data: room, error: roomError } = useQuery({
@@ -46,6 +48,13 @@ export default function Meeting() {
       return res.json();
     },
   });
+
+  // Update isAdmin state in Redux when room data is fetched
+  useEffect(() => {
+    if (room && room.isAdmin !== undefined) {
+      dispatch(setAdminStatus(room.isAdmin));
+    }
+  }, [room, dispatch]);
 
   const { socket, isConnected, sendMessage } = useWebSocket();
   const { 
@@ -107,7 +116,6 @@ export default function Meeting() {
             const senderName = participant?.name || "Participant";
 
             dispatch(addChatMessage({
-              senderId: message.fromPeerId,
               senderName: senderName,
               content: message.message,
               isPrivate: false
@@ -165,7 +173,6 @@ export default function Meeting() {
 
     // Also add to Redux store for immediate local update
     dispatch(addChatMessage({
-      senderId: userName,
       senderName: "You",
       content: message,
       isPrivate: false
@@ -210,7 +217,7 @@ export default function Meeting() {
 
           <div className="hidden md:flex items-center space-x-2 text-sm text-gray-600">
             <span>Room:</span>
-            <span className="font-mono bg-gray-100 px-2 py-1 rounded">{room.name}</span>
+            <span className="font-mono bg-gray-100 px-2 py-1 rounded">{room.code}</span>
             <Button variant="ghost" size="sm" onClick={copyRoomLink}>
               <Copy className="w-4 h-4" />
             </Button>
@@ -237,6 +244,11 @@ export default function Meeting() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar - Only visible to admin */}
+        {isAdmin && (
+          <AdminSidebar isAdmin={isAdmin} />
+        )}
+
         {/* Video Area */}
         <main className="flex-1 bg-gray-900 relative">
           <VideoGrid 
@@ -258,7 +270,7 @@ export default function Meeting() {
           />
         </main>
 
-        {/* Sidebar */}
+        {/* Right Sidebar */}
         {isSidebarOpen && (
           <aside className="w-80 bg-white border-l border-gray-200 flex flex-col hidden lg:flex">
             {/* Sidebar Tabs */}
